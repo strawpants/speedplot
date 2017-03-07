@@ -1,3 +1,3 @@
 #!/bin/bash
 
-wget -O - http://sealevel.colorado.edu/files/2016_rel4/sl_ns_global.txt | speedplot.py -s 1 -x years -y "mm of sea level" -t "Global mean sea level from CU sea level Research group" -o GMSL.svg
+wget -O - http://sealevel.colorado.edu/files/2016_rel4/sl_ns_global.txt | speedplot.py -s 1 -x years -y "mm of sea level" -t "Global mean sea level from CU sea level Research group" -o GMSL.png
