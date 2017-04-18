@@ -25,8 +25,8 @@ def main(argv):
 	parser.add_option('-t',"--title",type="string",help="Add a title to the plot")
 	parser.add_option('-o',"--output", metavar="IMAGE", type="string",help="Output the plot to an image rather than a dynamic viewer. Suffices (e.g. .pdf, .eps, .svg, .png) are automatically detected from IMAGE but must be supported by the matplotlib backend)")
 	parser.add_option('--transparency',action="store_true",help="Set the background to be transparent")
-	
-
+	parser.add_option('-m',"--multiply",type="float",default=1.0,metavar="SCALE", help="multiply the Y values with SCALE")	
+	parser.add_option('-g',"--grid",action="store_true",help="show grid on the plot")
 	
 	(options, args) = parser.parse_args()
 	fids=[]
@@ -71,7 +71,9 @@ def main(argv):
 	else:
 		labels=[]
 
-		
+	if options.multiply:
+		for i in range(len(fids)):
+			data[i][:,1:]*=options.multiply
 	#do some plotting
 	fig=plt.figure()
 	
@@ -100,7 +102,10 @@ def main(argv):
 
 	#create a legend
 	if labels:
-		plt.legend(loc='upper left')
+		plt.legend(loc='best')
+
+	if options.grid:
+		plt.grid()
 	#print or show the figure
 	if options.output:
 		plt.savefig(options.output,transparent=options.transparency)
