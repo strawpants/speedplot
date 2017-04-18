@@ -28,6 +28,8 @@ def main(argv):
 	#parser.add_option('--mat',type="string",default="NOMAT",metavar="VAR",help="Input file is a matlab file. Plot the data from matrixvariable VAR)")
 	#parser.add_option('--listmat',action="store_true",help="List available variables from the input matlab files")	
         
+	parser.add_option('-m',"--multiply",type="float",default=1.0,metavar="SCALE", help="multiply the Y values with SCALE")	
+	parser.add_option('-g',"--grid",action="store_true",help="show grid on the plot")
 	
 	(options, args) = parser.parse_args()
 	fids=[]
@@ -92,7 +94,9 @@ def main(argv):
 	else:
 		labels=[]
 
-		
+	if options.multiply:
+		for i in range(len(fids)):
+			data[i][:,1:]*=options.multiply
 	#do some plotting
 	fig=plt.figure()
 	
@@ -121,7 +125,10 @@ def main(argv):
 
 	#create a legend
 	if labels:
-		plt.legend(loc='upper left')
+		plt.legend(loc='best')
+
+	if options.grid:
+		plt.grid()
 	#print or show the figure
 	if options.output:
 		plt.savefig(options.output,transparent=options.transparency)
