@@ -7,6 +7,7 @@ import sys
 from optparse import OptionParser
 import numpy as np
 import matplotlib.pyplot as plt
+from cycler import cycler
 
 #main plotting function
 def main(argv):
@@ -25,9 +26,10 @@ def main(argv):
 	parser.add_option('-t',"--title",type="string",help="Add a title to the plot")
 	parser.add_option('-o',"--output", metavar="IMAGE", type="string",help="Output the plot to an image rather than a dynamic viewer. Suffices (e.g. .pdf, .eps, .svg, .png) are automatically detected from IMAGE but must be supported by the matplotlib backend)")
 	parser.add_option('--transparency',action="store_true",help="Set the background to be transparent")
-	parser.add_option('-m',"--multiply",type="float",default=1.0,metavar="SCALE", help="multiply the Y values with SCALE")	
+	parser.add_option('-m',"--multiply",type="string",metavar="SCALE1/SCALE2/..", help="multiply the Y columns with SCALE1/SCALE2/..")	
 	parser.add_option('-g',"--grid",action="store_true",help="show grid on the plot")
-	
+	parser.add_option('--twin',type="string",metavar='L/R/R/...',help="Create a plot with 2 Y axis systems, and assign the column to either the left(L) or right (R) axis")	
+	parser.add_option('--mean',action="store_true",help="remove the mean from the time series before plotting")
 	(options, args) = parser.parse_args()
 	fids=[]
 	#read in file(s)
@@ -43,28 +45,37 @@ def main(argv):
 			else:
 				fids.append(open(f,'r'))	
 	data=[]
+	xdat=[]
 	for fid in fids:
 		#possibly skip some lines
 		for i in range(options.skip):
 			fid.readline()
 		datatmp=[]
+		xdattmp=[]
 		for ln in fid.readlines():
 			fspl=ln.split()
+			xdattmp.append(float(fspl[0]))
 			#append the rest 
-			datatmp.append([float(i) for i in fspl]) 
-
+			datatmp.append([float(i) for i in fspl[1:]]) 
 		#append the data to the collection as a numpy array
+		xdat.append(np.array(xdattmp))
 		data.append(np.array(datatmp))
+		
 		#close the file
 		fid.close()
 	
 	if options.columns:
-		columns=[int(i)-1 for i in options.columns.split('/')]
+		columns=[int(i)-2 for i in options.columns.split('/')]
 	else:
 	#plot all columns(max 200) starting from 1
-		columns=[i for i in range(1,200)]
+		columns=[i for i in range(200)]
+	#remove the mean from all columns
+	if options.mean:
+		for i in range(len(data)):
+			data[i]-=data[i].mean(axis=0)
 
-	
+
+
 	if options.legend:
 		labels=options.legend.split('/')
 		label=iter(labels)
@@ -72,29 +83,59 @@ def main(argv):
 		labels=[]
 
 	if options.multiply:
+		#parse input parameter
+		scales=iter([float(i) for i in options.multiply.split('/')])
 		for i in range(len(fids)):
-			data[i][:,1:]*=options.multiply
-	#do some plotting
+			for col in range(data[i].shape[1]):
+				if not col in columns:
+					continue
+				try:
+					data[i][:,col]*=next(scales)
+				except StopIteration:
+					print("Sorry: run out of scale factors",file=sys.stderr)
+					sys.exit(1)
+
+    	#do some plotting
 	fig=plt.figure()
-	
-	for i in range(len(fids)): 
+	axislr={}
+	axislr['L']=fig.gca()
+	if options.twin:
+		twinaxis=[i for i in options.twin.split('/')]
+		axislr['R']=axislr['L'].twinx()
+		#shift the color cycle of the twin axis
+		cyc=axislr['R']._get_lines.prop_cycler
+		[next(cyc) for i in range(0,twinaxis.count('L'))]
+	else:
+		twinaxis='L'*200
+		print(columns)	
+	axit=iter(twinaxis) 
+	for i in range(len(fids)):
 		for col in range(data[i].shape[1]):
 			if not col in columns:
 				continue
 				
 			if labels:
 				try:
-					plt.plot(data[i][:,0],data[i][:,col],label=next(label))
+					axislr[next(axit)].plot(xdat[i],data[i][:,col],label=next(label))
 				except StopIteration:
 					print("Sorry: run out of labels for the legend",file=sys.stderr)
 					sys.exit(1)
 			else:	
-				plt.plot(data[i][:,0],data[i][:,col])
+				axislr[next(axit)].plot(xdat[i],data[i][:,col])
 	#add axis labels
 	if options.xlabel:
 		plt.xlabel(options.xlabel)
+
+
 	if options.ylabel:
-		plt.ylabel(options.ylabel)
+		if options.twin:
+			ylab=options.ylabel.split('/')
+			axislr['L'].set_ylabel(ylab[0])
+			if len(ylab)==2:
+				axislr['R'].set_ylabel(ylab[1])
+
+		else:
+			axislr['L'].set_ylabel(options.ylabel)
 
 	#add title
 	if options.title:
@@ -102,10 +143,16 @@ def main(argv):
 
 	#create a legend
 	if labels:
-		plt.legend(loc='best')
+		if options.twin:
+			axislr['L'].legend(loc='upper left')
+			axislr['R'].legend(loc='upper right')
+		else:
+			axislr['L'].legend(loc='best')
 
 	if options.grid:
 		plt.grid()
+
+	plt.tight_layout()
 	#print or show the figure
 	if options.output:
 		plt.savefig(options.output,transparent=options.transparency)
