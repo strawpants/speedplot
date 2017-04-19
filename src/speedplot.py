@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from cycler import cycler
 
+import scipy.io as sio
 #main plotting function
 def main(argv):
 	#set up command line options
@@ -27,23 +28,46 @@ def main(argv):
 	parser.add_option('-o',"--output", metavar="IMAGE", type="string",help="Output the plot to an image rather than a dynamic viewer. Suffices (e.g. .pdf, .eps, .svg, .png) are automatically detected from IMAGE but must be supported by the matplotlib backend)")
 	parser.add_option('--transparency',action="store_true",help="Set the background to be transparent")
 	parser.add_option('-m',"--multiply",type="string",metavar="SCALE1/SCALE2/..", help="multiply the Y columns with SCALE1/SCALE2/..")	
+	#parser.add_option('--mat',type="string",default="NOMAT",metavar="VAR",help="Input file is a matlab file. Plot the data from matrixvariable VAR)")
+	#parser.add_option('--listmat',action="store_true",help="List available variables from the input matlab files")	
+        
 	parser.add_option('-g',"--grid",action="store_true",help="show grid on the plot")
 	parser.add_option('--twin',type="string",metavar='L/R/R/...',help="Create a plot with 2 Y axis systems, and assign the column to either the left(L) or right (R) axis")	
 	parser.add_option('--mean',action="store_true",help="remove the mean from the time series before plotting")
 	(options, args) = parser.parse_args()
 	fids=[]
+	
+	matlab=False
+	#if options.mat != "NOMAT" or options.listmat:
+    #        matlab=True
+	
+	#if matlab and not args:
+    #        print("Sorry: Matlab files cannot be read from standard input",file=sys.stderr)
+    #        sys.exit(1)
+	#if matlab and len(args)!=1:
+	#	print("Only 1 input file allowed for matlab data",file=sys.stderr)
+	#	sys.exit(1)
+
+#	if options.listmat:
+#		tmp=sio.whosmat(args[0])
+#		for var in tmp:
+#			print("variable %s"%var[0],file=sys.stdout,end="")
+#			print(var[1],file=sys.stdout)
+#		sys.exit(0)
+
 	#read in file(s)
 	if not args:
 		#read from standard input
 		nfiles=1
 		fids.append(sys.stdin)
-	else:
+	elif not matlab:
 		#assume the remaining input arguments are files
 		for f in args:
 			if f == "-":
 				fids.append(sys.stdin)
 			else:
 				fids.append(open(f,'r'))	
+
 	data=[]
 	xdat=[]
 	for fid in fids:
