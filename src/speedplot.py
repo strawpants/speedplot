@@ -108,7 +108,10 @@ def main(argv):
 
 	if options.multiply:
 		#parse input parameter
-		scales=iter([float(i) for i in options.multiply.split('/')])
+		if options.multiply.count('/') == 0:
+			scales=iter([float(options.multiply) for i in range(100)])
+		else:
+			scales=iter([float(i) for i in options.multiply.split('/')])
 		for i in range(len(fids)):
 			for col in range(data[i].shape[1]):
 				if not col in columns:
