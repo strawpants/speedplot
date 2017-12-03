@@ -134,7 +134,7 @@ def main(argv):
 		[next(cyc) for i in range(0,twinaxis.count('L'))]
 	else:
 		twinaxis='L'*200
-		print(columns)	
+		# print(columns)	
 	axit=iter(twinaxis) 
 	for i in range(len(fids)):
 		for col in range(data[i].shape[1]):
