@@ -16,7 +16,7 @@ which will result in something like this:
 * Customized colorschemes?
 * Plot markers, errorbars
 * Adding subplots
-
+* Exchange deprecated optparse for argparse
 
 
 

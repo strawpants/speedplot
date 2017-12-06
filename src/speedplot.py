@@ -182,7 +182,7 @@ def main(argv):
 	plt.tight_layout()
 	#print or show the figure
 	if options.output:
-		plt.savefig(options.output,transparent=options.transparency)
+		plt.savefig(options.output,bbox_inches='tight',transparent=options.transparency)
 	else:
 		plt.show()
 
