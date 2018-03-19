@@ -21,14 +21,13 @@ def main(argv):
     parser=OptionParser(usage)
     parser.add_option("-V","--Var",metavar="VAR[N]",default='z[0]',type="string",help="specify the netcdf variable name and layer to plot ")
     # parser.add_option("-l","--legend",type="string",metavar="LEGEND",help="Make a legend for the plot by specifying LEGEND as: Curve1/Another Curve/..")	
-    parser.add_option('-c','--columns',type="string",metavar="COLS",help="only print specific columns from the files e.g. COLS: 2/6/8, the default prints all columns in all files")
     parser.add_option('-z',"--zlabel",type="string",default="",help="Specify a label to put on the color (z) axis")
     parser.add_option('-r',"--range",type="string",metavar="ZMIN,ZMAX",help="set range of colorbar")
     parser.add_option("--cmap",default="viridis",metavar="COLORMAP",help="Set colormap name")
     parser.add_option('-t',"--title",type="string",help="Add a title to the plot")
     parser.add_option('-o',"--output", metavar="IMAGE", type="string",help="Output the plot to an image rather than a dynamic viewer. Suffices (e.g. .pdf, .eps, .svg, .png) are automatically detected from IMAGE but must be supported by the matplotlib backend)")
     parser.add_option('--transparency',action="store_true",help="Set the background to be transparent")
-    #parser.add_option('-m',"--multiply",type="string",metavar="SCALE", help="multiply the grid SCALE")	
+    parser.add_option('-m',"--multiply",type="float",default=1.0,metavar="SCALE", help="multiply the grid and symbols values with SCALE")	
     
     #parser.add_option('-g',"--grid",action="store_true",help="show grid on the plot")
     parser.add_option('-p',"--projection",type="string",metavar="PROJ",default='glob180',help="choose projection:\n"\
@@ -82,7 +81,7 @@ def main(argv):
             else:
                 name=options.Var
                 dim=0
-            z=ncid[name][:]
+            z=options.multiply*ncid[name][:]
 
             if z.ndim ==3:
                 z=z[dim]
@@ -131,22 +130,29 @@ def main(argv):
     
     if grdfile:
         #plot the gridded data
-        m.imshow(z,extent=[min(lon), max(lon),min(lat),max(lat)])
-    
+        if options.range:
+
+            spltrng=[float(x) for x in options.range.split(',')]
+            m.imshow(z,extent=[min(lon), max(lon),min(lat),max(lat)],vmin=spltrng[0],vmax=spltrng[1],cmap=options.cmap)
+
+        else:
+            m.imshow(z,extent=[min(lon), max(lon),min(lat),max(lat)],cmap=options.cmap)
+        cbar=m.colorbar(label=options.zlabel) 
     
     m.drawcoastlines()
     
     if options.symbols:
-        print(min(plon),min(plat),min(pval),file=sys.stderr)
+        # print(min(plon),min(plat),min(pval),file=sys.stderr)
         
         if pval:
     # #plot symbols on top
             if options.range:
-                spltrng=options.range.split(',')
-                m.scatter(plon,plat,c=pval,vmin=float(spltrng[0]),vmax=float(spltrng[1]),cmap=options.cmap)
+                spltrng=[float(x) for x in options.range.split(',')]
+                m.scatter(plon,plat,c=pval,vmin=spltrng[0],vmax=spltrng[1],cmap=options.cmap)
             else:
                 m.scatter(plon,plat,c=pval)
-            m.colorbar(label=options.zlabel)
+            if not cbar:
+                m.colorbar(label=options.zlabel,cmap=options.cmap)
         
         else:
             m.scatter(plon,plat)
