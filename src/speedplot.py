@@ -30,7 +30,10 @@ def main(argv):
 	parser.add_option('-m',"--multiply",type="string",metavar="SCALE1/SCALE2/..", help="multiply the Y columns with SCALE1/SCALE2/..")	
 	#parser.add_option('--mat',type="string",default="NOMAT",metavar="VAR",help="Input file is a matlab file. Plot the data from matrixvariable VAR)")
 	#parser.add_option('--listmat',action="store_true",help="List available variables from the input matlab files")	
+	parser.add_option('-a',"--aspect",type="float",default=0.5,help="Set aspect ratio of the figure")
         
+	parser.add_option("--xlim",type="string",metavar="XSTART/XEND", help="Set the limits of the X axis")	
+	parser.add_option("--ylim",type="string",metavar="YSTARTLEFT/YENDLEFT[/YSTARTRIGHT/YENDRIGHT]", help="Set the limits of the Y axis")	
 	parser.add_option('-g',"--grid",action="store_true",help="show grid on the plot")
 	parser.add_option('--twin',type="string",metavar='L/R/R/...',help="Create a plot with 2 Y axis systems, and assign the column to either the left(L) or right (R) axis")	
 	parser.add_option('--mean',action="store_true",help="remove the mean from the time series before plotting")
@@ -175,6 +178,27 @@ def main(argv):
 			axislr['R'].legend(loc='upper right')
 		else:
 			axislr['L'].legend(loc='best')
+
+    #possbily set aspect ratio
+	if options.aspect:
+		axislr['L'].set_aspect(options.aspect)
+		if options.twin:
+			axislr['R'].set_aspect(options.aspect)
+
+
+	#Possibly set axis limits
+	if options.xlim:
+		xlims=[ float(x) for x in  options.xlim.split('/')]
+		axislr['L'].set_xlim(xlims[0],xlims[1])
+
+	if options.ylim:
+		ylims=[float(x) for x in options.ylim.split('/')]
+		if options.twin:
+			axislr['L'].set_ylim(ylims[0],ylims[1])
+			axislr['R'].set_ylim(ylims[2],ylims[3])
+		else:
+			axislr['L'].set_ylim(ylims[0],ylims[1])
+
 
 	if options.grid:
 		plt.grid()
