@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from cycler import cycler
 
 import scipy.io as sio
+from ast import literal_eval as make_tuple
+
 #main plotting function
 def main(argv):
 	#set up command line options
@@ -30,8 +32,8 @@ def main(argv):
 	parser.add_option('-m',"--multiply",type="string",metavar="SCALE1/SCALE2/..", help="multiply the Y columns with SCALE1/SCALE2/..")	
 	#parser.add_option('--mat',type="string",default="NOMAT",metavar="VAR",help="Input file is a matlab file. Plot the data from matrixvariable VAR)")
 	#parser.add_option('--listmat',action="store_true",help="List available variables from the input matlab files")	
-	parser.add_option('-a',"--aspect",type="float",default=0.5,help="Set aspect ratio of the figure")
-        
+	parser.add_option('-a',"--aspect",type="float",help="Set aspect ratio of the data")
+	parser.add_option('--size',type="string",metavar='(width,height)',default='(32,18)',help='Set the figure size (in cm)')     
 	parser.add_option("--xlim",type="string",metavar="XSTART/XEND", help="Set the limits of the X axis")	
 	parser.add_option("--ylim",type="string",metavar="YSTARTLEFT/YENDLEFT[/YSTARTRIGHT/YENDRIGHT]", help="Set the limits of the Y axis")	
 	parser.add_option('-g',"--grid",action="store_true",help="show grid on the plot")
@@ -125,8 +127,10 @@ def main(argv):
 					print("Sorry: run out of scale factors",file=sys.stderr)
 					sys.exit(1)
 
-    	#do some plotting
-	fig=plt.figure()
+#do some plotting
+	#convert figure size from cm in inches
+	fsize=tuple(x/2.54 for x in make_tuple(options.size))
+	fig=plt.figure(figsize=fsize)
 	axislr={}
 	axislr['L']=fig.gca()
 	if options.twin:
@@ -151,6 +155,7 @@ def main(argv):
 					print("Sorry: run out of labels for the legend",file=sys.stderr)
 					sys.exit(1)
 			else:	
+				# LR=next(axit)
 				axislr[next(axit)].plot(xdat[i],data[i][:,col])
 	#add axis labels
 	if options.xlabel:
@@ -202,6 +207,7 @@ def main(argv):
 
 	if options.grid:
 		plt.grid()
+	
 
 	plt.tight_layout()
 	#print or show the figure
