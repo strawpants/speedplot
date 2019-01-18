@@ -1,12 +1,12 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #python script to quickly plot geographical grids 
 # Author Roelof Rietbroek (http://wobbly.earth)
 # initial version 5 December 2017
 # License: see file LICENSE (MIT) 
 #part of speedplot
 import sys
-from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
 from optparse import OptionParser
 from netCDF4 import Dataset
 import numpy as np
@@ -50,9 +50,9 @@ def main(argv):
      #open netcdf data file
         print(grdfile)
         ncid=Dataset(grdfile,'r')
-
+        ncid.set_auto_mask(False)
         #try to read in longitude and latitude
-        for latname in ["y","latitude","Latitude"]:
+        for latname in ["y","latitude","Latitude","lat"]:
             try:
                 lat=ncid[latname][:]
                 break
@@ -62,7 +62,7 @@ def main(argv):
             print("couldn't find a suitable latitude variable",file=sys.stderr)
             sys.exit(1)
 
-        for lonname in ["x","longitude","Longitude"]:
+        for lonname in ["x","longitude","Longitude","lon"]:
             try:
                 lon=ncid[lonname][:]
                 break
@@ -106,60 +106,58 @@ def main(argv):
                 pval.append(float(lspl[2]))
         fid.close()
 
-
+    fromproj=ccrs.PlateCarree(central_longitude=0)
     if options.projection == 'glob':
         #make a global plot centered on the 0 meridian
-        m = Basemap(projection='cyl',llcrnrlat=-90,urcrnrlat=90, llcrnrlon=-180,urcrnrlon=180,resolution='c')
-        #possibly shift data when going from 0 to 360
-        print(max(lon),file=sys.stderr)
-        if max(lon) > 180:
-            print("Sorry, glob projection with this grid requires a shifting of grid data (not yet implemented",file=sys.stderr)
-            sys.exit(1)
+        proj=ccrs.PlateCarree(central_longitude=0)
     elif options.projection == 'glob180':
-        m = Basemap(projection='cyl',llcrnrlat=-90,urcrnrlat=90, llcrnrlon=0,urcrnrlon=360,resolution='c')
-        if options.symbols:
-            for i in range(len(plon)):
-                if plon[i] < 0:
-                    plon[i]=360+plon[i]
-   
-   
-   #make a base plot for the antarctic contintent
+        proj=ccrs.PlateCarree(central_longitude=180.0)
+        # if options.symbols:
+        #     for i in range(len(plon)):
+        #         if plon[i] < 0:
+        #             plon[i]=360+plon[i]
+        #
     
-    #m = Basemap(projection='spaeqd',boundinglat=-65,lon_0=180,lat_0=-90,resolution='h')
-    # m.shadedrelief()
-    
+    ax=plt.axes(projection=proj)
+
     if grdfile:
         #plot the gridded data
         if options.range:
 
             spltrng=[float(x) for x in options.range.split(',')]
-            m.imshow(z,extent=[min(lon), max(lon),min(lat),max(lat)],vmin=spltrng[0],vmax=spltrng[1],cmap=options.cmap)
+            plt.contourf(lon, lat, z,20, transform=fromproj,vmin=spltrng[0],vmax=spltrng[1],cmap=options.cmap)
+        else:
+            plt.contourf(lon, lat, z, 20,transform=fromproj,cmap=options.cmap)
 
-        else:
-            m.imshow(z,extent=[min(lon), max(lon),min(lat),max(lat)],cmap=options.cmap)
-        cbar=m.colorbar(label=options.zlabel) 
+
+        #colorbar drawing (horizontal)
+        cbarw=0.03
+        axpos=ax.get_position()
+        cbar_ax = plt.gcf().add_axes([axpos.x0,axpos.y0-cbarw*1.5,axpos.width,cbarw])
+        cbar=plt.colorbar(label=options.zlabel,cax=cbar_ax,orientation='horizontal')
     
-    m.drawcoastlines()
-    
-    if options.symbols:
-        # print(min(plon),min(plat),min(pval),file=sys.stderr)
-        
-        if pval:
-    # #plot symbols on top
-            if options.range:
-                spltrng=[float(x) for x in options.range.split(',')]
-                m.scatter(plon,plat,c=pval,vmin=spltrng[0],vmax=spltrng[1],cmap=options.cmap)
-            else:
-                m.scatter(plon,plat,c=pval)
-            if not cbar:
-                m.colorbar(label=options.zlabel,cmap=options.cmap)
-        
-        else:
-            m.scatter(plon,plat)
+    ax.coastlines()
+
+    # if options.symbols:
+    #     # print(min(plon),min(plat),min(pval),file=sys.stderr)
+    #
+    #     if pval:
+    # # #plot symbols on top
+    #         if options.range:
+    #             spltrng=[float(x) for x in options.range.split(',')]
+    #             # m.scatter(plon,plat,c=pval,vmin=spltrng[0],vmax=spltrng[1],cmap=options.cmap)
+    #         else:
+    #             m.scatter(plon,plat,c=pval)
+    #         if not cbar:
+    #             m.colorbar(label=options.zlabel,cmap=options.cmap)
+    #
+    #     else:
+    #         m.scatter(plon,plat)
 
 
 	#add title
     if options.title:
+        plt.sca(ax)
         plt.title(options.title)
 
 #print or show the figure
